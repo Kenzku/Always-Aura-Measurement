@@ -5,8 +5,12 @@
  */
 /*global phantom, ab*/
 var sess,
+    system = require('system'),
     when = require('./when.js'),
     host = 'localhost', //localhost or IP
+    Look = require('./look.js'),
+    CONSTANT = require('./constant.js'),
+    StringGenerate = require('./stringgenerate.js'),
     message,
     messageLength,
     messageLengthInByte,
@@ -15,25 +19,39 @@ var sess,
 
 require("./autobahn.js");
 
+(function () {
+    "use strict";
+    // generate message
+    messageLength = system.args[1] ||
+        CONSTANT.DEFAULT_VALUE.MESSAGE_LENGTH;
+    message = aStringGenerate.
+        init({messageLength: messageLength}).
+        generate();
+}());
+
 function publishEvent() {
     "use strict";
     var evt = {},
         excludeMe = false;
 
-    evt.payload =
+    evt.payload = message;
     sess.publish("measurement:overhead", evt, excludeMe);
 }
 
 function onControl(topicUri, event) {
     "use strict";
-//    console.log(topicUri);
-//    console.log(event);
     publishEvent();
 }
+
+function onResult() {
+    "use strict";
+}
+
 function onOverhead(topicUri, event) {
     "use strict";
-//    console.log(topicUri);
-//    console.log(event);
+//    console.dir(topicUri);
+    console.log(event);
+    phantom.exit();
 }
 ab.connect("ws://" + host + ":3000",
 
@@ -42,11 +60,13 @@ ab.connect("ws://" + host + ":3000",
         "use strict";
         // things to do once the session has been established
         sess = session;
-        console.log("Connected!");
+//        console.log("Connected!");
 
         sess.prefix("measurement", "http://" + host + ":3000/");
-        sess.subscribe("measurement:control", onControl);
+//        sess.subscribe("measurement:control", onControl);
+//        sess.subscribe("measurement:result", onResult);
         sess.subscribe("measurement:overhead", onOverhead);
+        publishEvent();
     },
 
     // WAMP session is gone
